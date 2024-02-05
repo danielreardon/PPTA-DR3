@@ -1,0 +1,100 @@
+This directory contains key pieces of code used for the PPTA-DR3 single-pulsar noise modelling and CRN/GW analyses
+
+The analysis was performed in a Singularity container, "entpptadr3_bilby_nano.sif", which contains all software and libraries (including TEMPO2, etc.) for the analysis.
+
+SINGLE-PULSAR NOISE MODELLING:
+The main script to perform single-pulsar noise-modelling is singlePsrNoise.py
+
+Usage is: python3 singlePsrNoise.py <psrname> <chainnum> <datadir>
+where <psrname> is the pulsar name (e.g. "J1909-3744"), <chainnum> is a number for indexing the particular job run, and <datadir> is the data subset to use (choices: "all" - full DR3, "dr2" - DR2 portion of DR3, "uwl" - UWL-only portion of DR3)
+
+There are several additional single-pulsar noise analysis scripts:
+singlePulsarNoise_fixwhite.py: same as singlePulsarNoise.py but with fixed white noise parameters based on earlier runs.
+singlePulsarNoise_fixwhite_withgwb.py: as above, but with the addition of a fixed gamma=13/3 red noise component for each pulsar, used for factorised-likelihood analyses
+singlePulsarNoise_fixwhite_rn_freespec.py: fixed white noise parameters, and all achromatic red noise terms are instead replaced with a free-spectrum red noise. Used to produce "factorised free-spectrum" in the GW paper.
+singlePulsarNoiseComparison_J1713band.py: example single-pulsar noise model comparison script, in this case for comparing the evidence for the presence of 40cm-band noise, 10-20cm paired band noise, or no band noise in J1713+0747
+
+CRN ANALYSIS:
+The main script is commonNoise.py, which sets up the pulsars according to the detailed noise model produced by the single-pulsar analysis, and flexibly adds one or more common noise models.
+
+Usage is:
+python3 commonNoise.py <chainnum> <dir> <crn_name> 
+
+<chainnum> is a number for indexing the particular job run
+<dir> is either "all", "dr2", or "uwl" for different sub-sections of the DR3 dataset
+
+Select one or more of the <crn_names> listed in the menu below
+To use multiple CRN signals, separate them with a comma
+e.g.
+pl_nocorr_freegam,freespec_dipole
+would add both a free-gamma CRN and a dipole-correlated free spectrum
+
+To do model comparison between CRN models, separate with a hyphen:
+e.g.
+pl_nocorr_freegam-pl_hd_freegam
+This would do model comparison for a powerlaw free-gamma uncorrelated CRN vs powerlaw HD-correlated free gamma CRN
+
+This can also be combined with commas so that multiple models can be compared
+e.g.
+pl_nocorr_freegam,pl_hd_fixgam-pl_hd_freegam
+
+models can be added by addiing an entry into the crn_model_dict in ppta_dr3_models
+
+CRN SELECTIONS ON THE MENU:
+crn_model_dict = {
+'pl_nocorr_freegam'  :  #powerlaw, no correlation, free spectral index
+'pl_nocorr_fixgam'   :  #powerlaw, no correlation, fixed 13/3 spectral index
+'bpl_nocorr_freegam' :  #broken power law, no correlation
+'freespec_nocorr'    :  #free-spectrum no correlation
+'pl_orf_bins'        :  #power law red noise, ORF sampled in angular bins
+'pl_orf_singlebin'   :  #power law red noise, ORF sampled in a singl angular bin
+'pl_orf_singlebin_fixA':  #power law red noise, ORF sampled in a singl angular bin with fixed log10_A
+'pl_orf_spline'      :  #power law red noise, spline-interpolated ORF bins    
+'pl_hd_fixgam'       :  #power law red noise, fixed spectral index, Hellings-Downs correlations
+'pl_hd_freegam'      :  #power law red noise, free spectral index, Hellings-Downs correlations,
+'pl_hdnoauto_fixgam' :  #power law red noise, fixed spectral index, Hellings-Downs correlations excluding auto-correlations
+'freespec_hd'        :  #free spectrum red noise, Hellings-Downs correlations
+'pl_dipole_freegam'  :  #power law red noise, free spectral index, Dipole correlations,
+'freespec_dipole'    :  #free spectrum red noise, Dipole correlations
+'pl_monopole_freegam':  #power law red noise, free spectral index, Monopole correlations,
+'freespec_monopole'  :  #free spectrum red noise, Monopole correlations
+}
+
+SUPPLEMENTARY SCRIPTS:
+
+The main supplementary library is ppta_dr3_models.py, which defines several custom Enterprise signal, selection, and Fourier basis functionality that enables our detailed single-pulsar noise and CRN analyses
+
+The other key supplementary script is ppta_dr3_utils.py, which holds much of the "boilerplate" code used to help run our CRN analysis effectively
+(e.g. constructing the Pulsar objects, doing time slicing, setting up group noise selections, constructing the noise-model dictionaries, setting up custom priors, etc.)
+
+These are imported into the main commonNoise.py script.
+
+POST-PROCESSING SCRIPTS:
+
+factorLikeGWB.py: factorised-likelihood processing and analysis, run on single-pulsar fixed-gamma = 13/3 chains
+factorLikeFreespec.py: factorised-likelihood processing and analysis for single-pulsar red noise free-spectral models
+factorLikeJUMP.py: factorised-likelihood timing JUMP analysis used for single-pulsar JUMP searches
+common_stationarity_2sliceyr_kde.py: post-processing and plotting of time-slice chains.
+
+PAIR-WISE CORRELATION SCRIPTS:
+
+The pairwise correlation analysis codes, data, and sky scrambles are located in the "pairwise" folder. The main script for computing the likelihood of HD over CRN, and validating with the sky scrambles, is "analyse_correlations_ipta.py"
+
+AUXILIARY FILES:
+
+Single-pulsar noise files are in ./data/all/noiseFiles_maxlike/
+These noise values are taken at the maximum-likelihood value
+
+Other single-pulsar noise information is contained in data/all/noiseFiles/
+this contains:
+./data/all/noiseFiles/3sig/ : a directory containing the 99.85% and 0.15% percentiles (i.e. the two-sided 3-sigma equivalent bounds) of the single-pulsar noise posteriors
+./data/all/noiseFiles/stats/ : similar to above, but containing the posterior mean, medians, standard-deviations, and 1-sigma bounds (16% and 84% percentiles) of the single-pulsar noise distributions
+./data/all/noiseFiles/chains/ : contains thinned, and reduced versions of the full single-pulsar noise chains. We draw from these distributions in the common noise analysis to set the initial sampler positions. The chains are reduced to 5000 thinned, burned-in samples to make this directory more portable - full single-pulsar chains can be requested if desired.
+
+./psrs.pkl: a pickle of a list of enterprise Pulsar objects for our DR3 pulsars, using the full DR3 dataset and assuming the DE440 SSE.
+
+./psrs.dat: list of pulsar names. Includes J1741+1351 and J1824-2452A  which are ignored for our GWB analysis.
+
+
+
+
