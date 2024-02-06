@@ -4,6 +4,9 @@ Collection of data, analysis codes, and mcmc chains from the data release and an
 #### Data release: 
 Zic, Reardon, et al. (2023) <https://ui.adsabs.harvard.edu/abs/2023PASA...40...49Z/abstract>
 
+The PPTA third data release, containing pulse profiles, .par files and .tim files, are available from the CSIRO data access portal
+ - Data release part 1: <https://doi.org/10.25919/j4xr-wp05>
+ - Data release part 2: <https://doi.org/10.25919/axvw-qa43>
 
 #### Noise analysis: 
 Reardon, Zic, et al. (2023a). <https://ui.adsabs.harvard.edu/abs/2023ApJ...951L...7R/abstract>
